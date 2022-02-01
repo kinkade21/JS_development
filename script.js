@@ -5,7 +5,9 @@ const rollback = 67;
 const fullPrice = 371458;
 const adaptive = false;
 
-console.log(typeof title, screens, screenPrice);
+console.log(typeof title);
+console.log(typeof fullPrice);
+console.log(typeof adaptive);
 console.log(screens.length);
 console.log("Стоимость вертски экранов", screenPrice, "рублей");
 console.log("Стоимость разработки сайта", fullPrice, "рублей");
