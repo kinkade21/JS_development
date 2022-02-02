@@ -32,7 +32,7 @@ console.log(screens.length);
 console.log("Стоимость вертски экранов", screenPrice, "рублей");
 console.log("Стоимость разработки сайта", fullPrice, "рублей");
 console.log(screens.toLowerCase().split(","));
-console.log(fullPrice * (rollback/100), "рублей");
+console.log(fullPrice * (rollback / 100), "рублей");
 console.log(Math.ceil(servicePercentPrice));
 
 
