@@ -24,7 +24,6 @@ switch (true) {
   case  fullPrice < 0:
     console.log('Что-то пошло не так');
     break;
-  
 }
 
 console.log(typeof title);
