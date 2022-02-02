@@ -9,7 +9,7 @@ let servicePrice1 = prompt('Сколько это будет стоить?');
 let service2 = prompt('Какой дополнительный тип услуги нужен?');
 let servicePrice2 = prompt('Сколько это будет стоить?');
 let fullPrice = screenPrice + servicePrice1 + servicePrice2;
-let servicePercentPrice = fullPrice - (fullPrice*(rollback/100));
+let servicePercentPrice = fullPrice - (fullPrice * (rollback / 100));
 
 switch (true) {
   case fullPrice > 30000:
@@ -33,7 +33,7 @@ console.log(screens.length);
 console.log("Стоимость вертски экранов", screenPrice, "рублей");
 console.log("Стоимость разработки сайта", fullPrice, "рублей");
 console.log(screens.toLowerCase().split(","));
-console.log(fullPrice * (rollback/100), "рублей");
+console.log(fullPrice * (rollback / 100), "рублей");
 console.log(Math.ceil(servicePercentPrice));
 
 
