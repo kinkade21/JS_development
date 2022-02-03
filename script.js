@@ -35,10 +35,9 @@ function getFullPrice(sp, asp) {
   return sp + asp;
 }
 
-function getTitle(str) {
-  if (!str) return str;
-
-  return str[0].toUpperCase() + str.slice(1);
+const getTitle = function(str) {
+  str.trim();
+  return str.charAt(0).toUpperCase(0) + str.slice(1);
 }
 
 const getServicePercentPrices = function(fp, rb) {
@@ -48,9 +47,8 @@ const getServicePercentPrices = function(fp, rb) {
 let allServicePrices = getAllServicePrices(servicePrice1, servicePrice2);
 let fullPrice = getFullPrice(screenPrice, allServicePrices);
 let servicePercentPrice = getServicePercentPrices(fullPrice, rollback);
-title = getTitle(title);
 
-showTypeOf(title)
+showTypeOf(getTitle(title))
 showTypeOf(screenPrice)
 showTypeOf(adaptive)
 
