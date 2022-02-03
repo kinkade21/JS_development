@@ -36,8 +36,8 @@ function getFullPrice(sp, asp) {
 }
 
 const getTitle = function(str) {
-  str.trim();
-  return str.charAt(0).toUpperCase(0) + str.slice(1);
+  str = str.trim();
+  return str.charAt(0).toUpperCase(0) + str.slice(1).toLowerCase();
 }
 
 const getServicePercentPrices = function(fp, rb) {
