@@ -1,3 +1,4 @@
+'use strict'
 
 let rollback = 67;
 let title = prompt('Как назывется ваш проект?');
@@ -26,26 +27,28 @@ const getRollbackMassage = function (price) {
 }
 
 
-function getAllServicePrices(s1, s2) {
-  let allServicePrices = s1 + s2;
+const getAllServicePrices = (sp1, sp2) => {
+  return sp1 + sp2;
 };
 
-let fullPrice = function getFullPrice(sp, asp) {
-  return  sp + asp;
-};
+function getFullPrice(sp, asp) {
+  return sp + asp;
+}
 
-title = function getTitle(str) {
+function getTitle(str) {
   if (!str) return str;
 
   return str[0].toUpperCase() + str.slice(1);
 }
 
-let servicePercentPrice = function getServicePercentPrices(fp, rb) {
+const getServicePercentPrices = function(fp, rb) {
   return fp - (fp * (rb / 100))
 }
 
-getFullPrice(screenPrice, getAllServicePrices(service1, service2));
-getTitle(title);
+let allServicePrices = getAllServicePrices(servicePrice1, servicePrice2);
+let fullPrice = getFullPrice(screenPrice, allServicePrices);
+let servicePercentPrice = getServicePercentPrices(fullPrice, rollback);
+title = getTitle(title);
 
 showTypeOf(title)
 showTypeOf(screenPrice)
