@@ -16,16 +16,20 @@ const input5 = document.getElementsByClassName('total-input')[4];
 
 let screens = document.querySelectorAll('.screen');
 
-console.log('1)', 'elTitle', elTitle);
-console.log('2.1)', 'btnStart', btnStart);
-console.log('2.2)', 'btnReset', btnReset);
-console.log('3)', 'btnPlus', btnPlus);
-console.log('4.1)', 'itmsPersent', itmsPersent);
-console.log('4.2)', 'itmsNumber', itmsNumber);
-console.log('5)', 'inputRollback', inputRollback);
-console.log('6)', 'valueRollback', valueRollback);
-console.log('7)', 'inputsRight', inputsRight);
-console.log('8)', 'screens', screens);
+console.log(titlePage);
+console.log(startBtn);
+console.log(resetBtn);
+console.log(addBtn);
+console.log(percent);
+console.log(number);
+console.log(rollback);
+console.log(rangValue);
+console.log(input1);
+console.log(input2);
+console.log(input3);
+console.log(input4);
+console.log(input5);
+console.log(screen);
 
 
 const appData = {
