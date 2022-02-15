@@ -1,34 +1,19 @@
 "use strict";
 
-// название проекта
-const elTitle = document.getElementsByTagName('h1')[0];
-// кнопка "Рассчитать" и "Сброс"
-let btnStart, btnReset;
-for (let btn of document.getElementsByClassName('handler_btn')) {
-  if (btn.id === 'start') {
-    btnStart = btn;
-  } else if (btn.id === 'reset') {
-    btnReset = btn;
-  }
-}
-// кнопка "+" под выпадающим списком
-const btnPlus = document.querySelector('.screen-btn');
-// элемнеты-проценты и элемнеты-числa
-let itmsPersent = [], itmsNumber = [];
-document.querySelectorAll('.other-items').forEach((node) => {
-  if (node.classList.contains('percent')) {
-    itmsPersent.push(node);
-  } else if (node.classList.contains('number')) {
-    itmsNumber.push(node);
-  }
-});
-// ранжированный ввод процента отката 
-const inputRollback = document.querySelector('.rollback input[type="range"]');
-// елемент отображения текущего значение процента отката 
-const valueRollback = document.querySelector('.rollback span.range-value');
-// елементы отображения итогов
-const inputsRight = Array.from(document.getElementsByClassName('total-input'));
-// елементы экрана
+const titlePage = document.getElementsByTagName('h1')[0];
+const startBtn = document.getElementsByClassName('handler_btn')[0];
+const resetBtn = document.getElementsByClassName('handler_btn')[1];
+const addBtn = document.querySelector('.screen-btn');
+const percent = document.querySelectorAll('.other-items.percent');
+const number = document.querySelectorAll('.other-items.number');
+const rollback = document.querySelector('.rollback input[type = "range"]');
+const rangValue = document.querySelector('.rollback span.range-value');
+const input1 = document.getElementsByClassName('total-input')[0];
+const input2 = document.getElementsByClassName('total-input')[1];
+const input3 = document.getElementsByClassName('total-input')[2];
+const input4 = document.getElementsByClassName('total-input')[3];
+const input5 = document.getElementsByClassName('total-input')[4];
+
 let screens = document.querySelectorAll('.screen');
 
 console.log('1)', 'elTitle', elTitle);
