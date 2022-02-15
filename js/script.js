@@ -1,5 +1,48 @@
 "use strict";
 
+// название проекта
+const elTitle = document.getElementsByTagName('h1')[0];
+// кнопка "Рассчитать" и "Сброс"
+let btnStart, btnReset;
+for (let btn of document.getElementsByClassName('handler_btn')) {
+  if (btn.id === 'start') {
+    btnStart = btn;
+  } else if (btn.id === 'reset') {
+    btnReset = btn;
+  }
+}
+// кнопка "+" под выпадающим списком
+const btnPlus = document.querySelector('.screen-btn');
+// элемнеты-проценты и элемнеты-числa
+let itmsPersent = [], itmsNumber = [];
+document.querySelectorAll('.other-items').forEach((node) => {
+  if (node.classList.contains('percent')) {
+    itmsPersent.push(node);
+  } else if (node.classList.contains('number')) {
+    itmsNumber.push(node);
+  }
+});
+// ранжированный ввод процента отката 
+const inputRollback = document.querySelector('.rollback input[type="range"]');
+// елемент отображения текущего значение процента отката 
+const valueRollback = document.querySelector('.rollback span.range-value');
+// елементы отображения итогов
+const inputsRight = Array.from(document.getElementsByClassName('total-input'));
+// елементы экрана
+let screens = document.querySelectorAll('.screen');
+
+console.log('1)', 'elTitle', elTitle);
+console.log('2.1)', 'btnStart', btnStart);
+console.log('2.2)', 'btnReset', btnReset);
+console.log('3)', 'btnPlus', btnPlus);
+console.log('4.1)', 'itmsPersent', itmsPersent);
+console.log('4.2)', 'itmsNumber', itmsNumber);
+console.log('5)', 'inputRollback', inputRollback);
+console.log('6)', 'valueRollback', valueRollback);
+console.log('7)', 'inputsRight', inputsRight);
+console.log('8)', 'screens', screens);
+
+
 const appData = {
   title: "Калькулятор верстки",
   screens: [],
