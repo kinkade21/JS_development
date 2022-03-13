@@ -1,4 +1,3 @@
-// Урок 12 Обработка событий. Практика.
 "use strict";
 
 // ссылки не элементы формы:
@@ -19,14 +18,18 @@ let buttonMinus;
 //  - дополнительные параметры: элемнеты-проценты и элемнеты-числa
 const otherItemsPercent = document.querySelectorAll('.other-items.percent');
 const otherItemsNumber = document.querySelectorAll('.other-items.number');
+// - CMS (от англ. Content Management System) — система управления контентом сайта;
+const cmsOpen = document.getElementById('cms-open');
+const hiddenCmsVariants = document.querySelector('.hidden-cms-variants');
 
 // - ранжированный ввод процента отката 
 const inputRollback = document.querySelector('.rollback input');
 // - елемент отображения текущего значение процента отката 
 const inputRollbackValue = document.querySelector('.rollback .range-value');
 
-// - кнопка "Рассчитать"
+// - кнопка "Рассчитать" и "Сброс"
 const startBtn = document.getElementsByClassName('handler_btn')[0];
+const resetBtn = document.getElementsByClassName('handler_btn')[1];
 
 // - елементы отображения итогов
 const total = document.getElementsByClassName('total-input')[0];
@@ -43,6 +46,13 @@ const appData = {
   // максимальное число одного типа экрана
   maxTypeScreens: 100000,
 
+  // статусЫ состояния расчета
+  status: {
+    calculated: false,
+    screens: false,
+    inputCMS: false
+  },
+
   // дополнительные услуги: проценты и их цены
   servicesPercent: {},
   servicesNumber: {},
@@ -56,6 +66,11 @@ const appData = {
   servicePricesPercent: 0,
   servicePricesNumber: 0,
 
+  // проценты и сумма за CMS
+  percentCMS: 0,
+  maxPercentCMS: 100,
+  servicePriceCMS: 0,
+
   // итоговая стоимость работы
   fullPrice: 0,
   // % отката посреднику
@@ -63,24 +78,50 @@ const appData = {
   // доход разработчика
   servicePercentPrice: 0,
 
+  // проверяет на запись числа в строке:
+  // целая часть - не более int-разрядов (по умолчанию 9), 
+  // дробная часть 0 или от 1 до 2 разрядов с разделителем: точка или запятая
+  isNumber: (input, int = 9, dec = 2) => {
+    const regexp = new RegExp(`(^0$)` +
+      (dec > 0 ? `|(^0(\\.|,)\\d{0,${dec - 1}}\\d$)` : ``) +
+      `|(^[1-9]\\d{0,${1, int - 1}}$)` +
+      (dec > 0 ? `|(^[1-9]\\d{0,${1, int - 1}}(\\.|,)\\d{0,${dec - 1}}\\d$)` : ``));
+
+    return regexp.test((input + '').trim());
+  },
+
+  // перевод числа из строки ввода в число
+  toNumber: (strInput) => +(strInput.replace(/[,]/g, '.').trim()),
+
+
   // инициализация
-  init: () => {
+  init() {
     // устанавливаем начальные настройки страницы
-    appData.initPage();
+    this.initPage();
 
-    // добавить дополнительный тип экрана к расчету по нажатию кнопки "+"
-    buttonPlus.addEventListener('click', appData.addScreenBlock);
+    // добавить дополнительный тип экрана к расчету по нажатию кнопки "+"    
+    buttonPlus.addEventListener('click', () => this.addScreenBlock());
     // удалить последний дополнительный тип экрана к расчету по нажатию кнопки "-"
-    buttonMinus.addEventListener('click', appData.delScreenBlock);
+    buttonMinus.addEventListener('click', () => this.delScreenBlock());
     // выбор процента отката
-    inputRollback.addEventListener('input', appData.getRollback);
-
+    inputRollback.addEventListener('input', (event) => this.getRollback(event));
+    // расчет по нажатию кнопки "Рассчитать"
+    startBtn.addEventListener('click', () => this.calculate());
+    // сброс по нажатию кнопки "Сброс"
+    resetBtn.addEventListener('click', () => this.cleaning());
+    // доступ к выбору CMS-варинтов
+    cmsOpen.addEventListener('change', (event) => this.checkCMS(event));
+    // выбор CMS-варинта
+    hiddenCmsVariants.addEventListener('change', (event) => this.selectCMS(event));
   },
 
   // начальные настройки страницы
-  initPage: () => {
+  initPage() {
     const input = screens[0].querySelector('input'),
-      select = screens[0].querySelector('select');
+      select = screens[0].querySelector('select'),
+      selectCMS = hiddenCmsVariants.querySelector('select'),
+      inputCMS = hiddenCmsVariants.querySelector('input'),
+      spanCMS = document.createElement('span');
 
     // устанавка названия страницы 
     document.title = title.textContent;
@@ -88,17 +129,19 @@ const appData = {
     // напоминание заполняющему
     document.querySelector('h3').innerHTML +=
       '<br /><small><i>поля тип и количество экранов обязательны для заполнения' +
-      '<br />количество экранов не более ' + appData.maxTypeScreens + '</i></small>';
+      '<br />количество экранов не более ' + this.maxTypeScreens + '</i></small>';
 
     // вносим изменения в настройки полей типа экранов    
     input.setAttribute('type', 'number');
     input.setAttribute('min', '0');
-    input.setAttribute('max', appData.maxTypeScreens + '');
-    input.setAttribute('max', appData.maxTypeScreens + '');
-    input.setAttribute('onchange', 'appData.correctScreens()');
-    select.setAttribute('onchange', 'appData.correctScreens()');
-    [...document.querySelectorAll('.element input.custom-checkbox')].forEach((elem) => {
-      elem.setAttribute('onchange', 'appData.stop()');
+    input.setAttribute('max', this.maxTypeScreens + '');
+    input.appThis = this;
+    input.setAttribute('onchange', 'this.appThis.reachStartBtn()');
+    select.appThis = this;
+    select.setAttribute('onchange', 'this.appThis.reachStartBtn()');
+    [...document.querySelectorAll('.element input.custom-checkbox')].forEach(elem => {
+      elem.appThis = this;
+      elem.setAttribute('onchange', 'this.appThis.checkServices()');
     });
 
     // шаблон пустого типа экрана
@@ -110,127 +153,299 @@ const appData = {
     buttonMinus.style.marginLeft = '5px';
     buttonPlus.after(buttonMinus);
 
+    // вывод пояснения при вводе процентов CMS для типа "Другое"
+    spanCMS.innerHTML = `<br /><small>(число от 0 до ${this.maxPercentCMS})</small>`;
+    inputCMS.parentElement.append(spanCMS);
+
+    // и дополняем атрибутами
+    selectCMS.appThis = this;
+    selectCMS.setAttribute('onchange', 'this.appThis.reachStartBtn()');
+    inputCMS.appThis = this;
+    inputCMS.setAttribute('onchange', 'this.appThis.reachStartBtn()');
+
+    // доступность кнопки "Рассчитать"
+    this.reachStartBtn();
     // состояние кнопочек изменения количества типов экрана
-    appData.statusScreensButton();
+    this.statusScreensButton();
   },
 
-  // контроль корректости заполнения типов экрана
-  correctScreens: () => {
-    // наличие незаполненных (некорректно заполненных) полей
-    let isCorrect = true;
+  // доступность кнопки "Рассчитать"
+  reachStartBtn() {
+    let reach;
 
-    screens.forEach((screen, index) => {
-      const select = screen.querySelector('select');
-      const input = screen.querySelector('input');
-      const value = +input.value;
+    // состояние блоков типов экрана
+    this.statusScreens();
+    reach = this.status.screens;
 
-      select.style.backgroundColor = '';
-      input.style.backgroundColor = '';
-      if (!select.selectedIndex) {
-        select.style.backgroundColor = 'MistyRose';
-        isCorrect = false;
-      }
-      if (!value || value < 1 || value > appData.maxTypeScreens) {
-        input.style.backgroundColor = 'MistyRose';
-        isCorrect = false;
-      }
-    });
-
-    startBtn.removeEventListener('click', appData.start);
-    if (isCorrect) {
-      startBtn.style.opacity = '';
-      startBtn.style.cursor = '';
-      // расчет по нажатию кнопки "Рассчитать"
-      startBtn.addEventListener('click', appData.start);
-    } else {
-      startBtn.style.opacity = '0.5';
-      startBtn.style.cursor = 'default';
+    // проверка корректного ввода %CMS при типе "прочее"
+    this.statusCMS();
+    if (reach) {
+      reach = this.status.inputCMS;
     }
-    // очистка результатов расчета    
-    appData.stop();
+
+    startBtn.disabled = !reach;
+    startBtn.style.opacity = reach ? '' : '0.5';
+    startBtn.style.cursor = reach ? '' : 'default';
   },
 
   // добавляем дополнительный тип экрана к расчету
-  addScreenBlock: () => {
+  addScreenBlock() {
     let cloneScreen;
 
     if (screens.length < maxScreens) {
-      // - копия первого элемента коллекции screens
+      // - копия первого элемента коллекции screens c контекстом для onchange
       cloneScreen = templateScreen.cloneNode(true);
+      cloneScreen.querySelector('input').appThis = this;
+      cloneScreen.querySelector('select').appThis = this;
+
       // вставляем клон после последнего элемента в screens     
       screens[screens.length - 1].after(cloneScreen);
+
       // SGVarr  добавляем в список для правильного отображения и вставки - может позже будут добавлять? 
       screens.push(cloneScreen);
-      // состояние кнопочек 
-      appData.statusScreensButton();
+
+      // доступность кнопки "Рассчитать"
+      this.reachStartBtn();
+      // состояние кнопочек изменения количества типов экрана 
+      this.statusScreensButton();
     }
   },
 
   // удаляем последний дополнительный тип экрана к расчету
-  delScreenBlock: () => {
+  delScreenBlock() {
     if (screens.length > 1) {
       screens[screens.length - 1].remove();
       screens.length--;
-      // состояние кнопочек 
-      appData.statusScreensButton();
+
+      // доступность кнопки "Рассчитать"
+      this.reachStartBtn();
+      // состояние кнопочек изменения количества типов экрана 
+      this.statusScreensButton();
     }
+  },
+
+  // состояние блоков типов экрана
+  statusScreens() {
+    // наличие незаполненных (некорректно заполненных) полей
+    let correct = true;
+
+    screens.forEach((screen, index) => {
+      const select = screen.querySelector('select');
+      const input = screen.querySelector('input');
+      const calculated = this.status.calculated;
+
+      select.disabled = calculated;
+      select.style.cursor = calculated ? 'default' : '';
+      input.disabled = calculated;
+      input.style.cursor = calculated ? 'default' : '';
+
+      if (!calculated) {
+        const value = +input.value;
+        const noSelect = !select.selectedIndex;
+        const noInput = !value || value < 1 || value > this.maxTypeScreens;
+
+        select.style.backgroundColor = noSelect ? 'MistyRose' : '';
+        input.style.backgroundColor = noInput ? 'MistyRose' : '';
+
+        if (noSelect || noInput) { correct = false; }
+      }
+      this.status.screens = correct;
+    });
   },
 
   // состояние кнопок изменения количества типа экрана
-  statusScreensButton: () => {
-    switch (screens.length) {
-      case 1:
-        // декативируем кнопку удаления типов экрана
-        buttonMinus.style.opacity = '0.5';
-        break;
-      case maxScreens:
-        // декативируем кнопку добавления типов экрана
-        buttonPlus.style.opacity = '0.5';
-        break;
-      default:
-        buttonPlus.style.opacity = '1';
-        buttonMinus.style.opacity = '1';
+  statusScreensButton() {
+    const noPlus = (screens.length === maxScreens || this.status.calculated);
+    const noMinus = (screens.length === 1 || this.status.calculated);
+
+    // [де]активация кнопки добавления типов экрана
+    buttonPlus.disabled = noPlus;
+    buttonPlus.style.opacity = noPlus ? '0.5' : '1';
+    buttonPlus.style.cursor = noPlus ? 'default' : '';
+
+    // [де]активация кнопки удаления типов экрана
+    buttonMinus.disabled = noMinus;
+    buttonMinus.style.opacity = noMinus ? '0.5' : '1';
+    buttonMinus.style.cursor = noMinus ? 'default' : '';
+  },
+
+  // состояние блоков CMS
+  statusCMS() {
+    const calculated = this.status.calculated,
+      select = hiddenCmsVariants.querySelector('select'),
+      input = hiddenCmsVariants.querySelector('input');
+    const correct = (() => {
+      let valid = true;
+      if (cmsOpen.checked && select.options[select.selectedIndex].value === 'other') {
+        valid = input.value.trim() === '' ||
+          (this.isNumber(input.value, 3, 0) && input.value >= 0 && input.value <= this.maxPercentCMS);
+      }
+      return valid;
+    })();
+
+    select.disabled = calculated;
+    select.style.cursor = calculated ? 'default' : '';
+    input.disabled = calculated;
+    input.style.cursor = calculated ? 'default' : '';
+    input.style.backgroundColor = correct ? '' : 'MistyRose';
+
+    this.status.inputCMS = correct;
+  },
+
+  // выбор дополнительных услуг
+  checkServices() {
+    // при произведенном расчете выполняем уточнение рассчета
+    if (this.status.calculated) { this.start(); }
+  },
+
+  // доступ к выбору CMS-варинтов
+  checkCMS(event) {
+    if (event.target.checked) {
+      hiddenCmsVariants.style.display = 'flex';
+    } else {
+      hiddenCmsVariants.style.display = 'none';
     }
 
-    // контроль корректости заполнения типов экрана
-    appData.correctScreens();
+    // при произведенном расчете выполняем уточнение рассчета
+    if (this.status.calculated) {
+      // состояние блоков CMS
+      this.statusCMS();
+      if (this.status.inputCMS) { this.start(); }
+
+    } else {
+      // доступность кнопки "Рассчитать"
+      this.reachStartBtn();
+    }
+  },
+
+  // очистка выбора CMS-варинта
+  delCMS() {
+    // спрячем
+    cmsOpen.checked = false;
+    hiddenCmsVariants.style.display = 'none';
+
+    // и почистим 
+    hiddenCmsVariants.querySelector('select').selectedIndex = 0;
+    hiddenCmsVariants.querySelector('.main-controls__input').style.display = 'none';
+    hiddenCmsVariants.querySelector('input').value = '';
+
+    // очищаем процент СМS
+    this.percentCMS = 0;
+  },
+
+  // выбор CMS-варинта
+  selectCMS(event) {
+    const block = event.currentTarget;
+    const select = event.target;
+
+    // выбор типа CMS
+    if (select.id === "cms-select") {
+      block.querySelector('.main-controls__input').style.display =
+        (select.value === 'other') ? 'block' : 'none';
+    }
   },
 
   // выбор процента отката
-  getRollback: (event) => {
-    appData.rollback = event.target.value;
+  getRollback(event) {
+    this.rollback = event.target.value;
     // отображения текущего значение процента отката 
-    appData.showInputRollback();
+    this.showInputRollback();
 
     // при произведенном расчете меняем откат 
-    if (appData.fullPrice) {
-      appData.addPrices();
-      appData.showResult();
-    }
+    if (this.status.calculated) { this.start(); }
+  },
+
+  // очистка процента отката
+  delRollback() {
+    this.rollback = 0;
+    inputRollback.value = 0;
+    // отображения текущего значение процента отката 
+    this.showInputRollback();
   },
 
   // отображения текущего значение процента отката 
-  showInputRollback: () => {
+  showInputRollback() {
     // елемент отображения текущего значение процента отката 
-    inputRollbackValue.textContent = appData.rollback + '%';
+    inputRollbackValue.textContent = this.rollback + '%';
+  },
+
+  // расчет по нажатию кнопки "Рассчитать"
+  calculate() {
+    // запуска расчета
+    this.start();
+
+    // устанавливаем признак расчета
+    this.status.calculated = true;
+
+    // состояние блоков типов экрана
+    this.statusScreens();
+    // состояние кнопок изменения количества типа экрана
+    this.statusScreensButton();
+    // состояние блоков CMS
+    this.statusCMS();
+
+    // убираем кнопку "Рассчет" ставим кнопку "Сброс"
+    startBtn.style.display = 'none';
+    resetBtn.style.display = '';
+  },
+
+  // очистка по нажатию кнопки "Сброс"
+  cleaning() {
+
+    // возврат к первоначальному состоянию
+    this.reset();
+
+    // снимаем признак расчета
+    this.status.calculated = false;
+
+    // доступность кнопки "Рассчитать"
+    this.reachStartBtn();
+    // состояние кнопок изменения количества типа экрана
+    this.statusScreensButton();
+    // состояние блоков CMS
+    this.statusCMS();
+
+    // убираем кнопку "Сброс" ставим кнопку "Рассчет"
+    resetBtn.style.display = 'none';
+    startBtn.style.display = '';
+
+
   },
 
   // запуск расчета
-  start: () => {
+  start() {
     // перечень типов экранов для расчета
-    appData.addScreens();
+    this.addScreens();
     // значения дополнительных параметров для расчета
-    appData.addServices();
+    this.addServices();
+    // процент за CMS
+    this.addPercentCMS();
     // расчет итоговых стоимостей экранов, дополнительных услуг, доход разработчика
-    appData.addPrices();
+    this.addPrices();
     // вывод результатов расчетов на экран
-    appData.showResult();
+    this.showResult();
+  },
+
+  // возврат к первоначальному состоянию
+  reset() {
+    // удаляем перечень типов экрана для расчета из верстки
+    this.delScreens();
+    // очищаем дополнительные параметры для расчета 
+    this.delServices();
+    // очистка выбора CMS-варинта
+    this.delCMS();
+    // очистка процента отката
+    this.delRollback();
+    // очистка итоговых стоимостей экранов, дополнительных услуг и доход разработчика
+    this.delPrices();
+    // вывод результатов расчетов на экран
+    this.showResult();
   },
 
   // считываем перечень типов экрана для расчета из верстки
-  addScreens: () => {
+  addScreens() {
     // очистим перед обновлением
-    appData.screens.length = 0;
+    this.screens.length = 0;
 
     screens.forEach((screen, index) => {
       const select = screen.querySelector('select');
@@ -238,7 +453,7 @@ const appData = {
       // название типа (из списка типов по индексу выбранного типа select.selectedIndex)
       const selectName = select.options[select.selectedIndex].textContent;
 
-      appData.screens.push({
+      this.screens.push({
         id: index,
         name: selectName,
         price: +select.value * +input.value,
@@ -247,8 +462,31 @@ const appData = {
     });
   },
 
+
+  // удаляем перечень типов экрана для расчета из верстки
+  delScreens() {
+    screens.forEach((screen, index) => {
+      const select = screen.querySelector('select');
+      const input = screen.querySelector('input');
+      // название типа (из списка типов по индексу выбранного типа select.selectedIndex)
+      const selectName = select.options[select.selectedIndex].textContent;
+      if (index) {
+        // удаляем добавленные
+        screen.remove();
+      } else {
+        // для первого снимаем выбор
+        select.selectedIndex = 0;
+        input.value = '';
+      }
+    });
+
+    screens.length = 1;
+    this.screens.length = 0;
+
+  },
+
   // считываем дополнительные параметры для расчета 
-  addServices: () => {
+  addServices() {
     const add = (item, typeValue) => {
       // флажок (чекбокс) учитывать или нет параметр в расчетах
       const check = item.querySelector('input[type=checkbox]');
@@ -257,69 +495,98 @@ const appData = {
       const input = item.querySelector('input[type=text]');
 
       // запоминаем значения по выбранным дополнительным услугам
-      appData['services' + typeValue][label.textContent] = (check.checked) ? +input.value : 0;
+      this['services' + typeValue][label.textContent] = (check.checked) ? +input.value : 0;
     };
 
     // значения-проценты
-    otherItemsPercent.forEach((item) => { add(item, 'Percent'); });
+    otherItemsPercent.forEach(item => add(item, 'Percent'));
     // значения-числa    
-    otherItemsNumber.forEach((item) => { add(item, 'Number'); });
+    otherItemsNumber.forEach(item => add(item, 'Number'));
+  },
+
+  // очищаем дополнительные параметры для расчета 
+  delServices() {
+    const clear = (item, typeValue) => {
+      // флажок (чекбокс) учитывать или нет параметр в расчетах
+      const check = item.querySelector('input[type=checkbox]');
+
+      // очищаем значения по дополнительным услугам
+      check.checked = false;
+    };
+
+    // значения-проценты
+    otherItemsPercent.forEach(item => clear(item, 'Percent'));
+    // значения-числa    
+    otherItemsNumber.forEach(item => clear(item, 'Number'));
+
+    this.servicesPercent.length = 0;
+    this.servicesNumber.length = 0;
+  },
+
+  // процент за CMS
+  addPercentCMS() {
+    const select = hiddenCmsVariants.querySelector('select');
+    const input = hiddenCmsVariants.querySelector('input');
+
+    let value = '0';
+    if (cmsOpen.checked) {
+      value = select.options[select.selectedIndex].value;
+      if (value === 'other') { value = input.value; }
+    }
+
+    this.percentCMS = +value;
   },
 
   // расчет итоговых стоимостей экранов, дополнительных услуг и доход разработчика
-  addPrices: () => {
+  addPrices() {
     // итоговая стоимость экранов
-    appData.screenPrice = appData.screens.reduce((sum, screen) => sum + screen.price, 0);
+    this.screenPrice = this.screens.reduce((sum, screen) => sum + screen.price, 0);
     // итоговое количество экранов
-    appData.screenCount = appData.screens.reduce((quantity, screen) => quantity + screen.count, 0);
+    this.screenCount = this.screens.reduce((quantity, screen) => quantity + screen.count, 0);
 
     // итоговая стоимость дополнительных услуг заданных в процентах    
-    appData.servicePricesPercent = 0;
-    for (let key in appData.servicesPercent) {
-      appData.servicePricesPercent += appData.screenPrice * appData.servicesPercent[key] / 100;
+    this.servicePricesPercent = 0;
+    for (let key in this.servicesPercent) {
+      this.servicePricesPercent += this.screenPrice * this.servicesPercent[key] / 100;
     }
 
     // итоговая стоимость дополнительных услуг заданных в суммах    
-    appData.servicePricesNumber = 0;
-    for (let key in appData.servicesNumber) {
-      appData.servicePricesNumber += appData.servicesNumber[key];
+    this.servicePricesNumber = 0;
+    for (let key in this.servicesNumber) {
+      this.servicePricesNumber += this.servicesNumber[key];
     }
 
     // итоговая стоимость работы
-    appData.fullPrice = appData.screenPrice + appData.servicePricesPercent + appData.servicePricesNumber;
+    this.fullPrice = this.screenPrice + this.servicePricesPercent + this.servicePricesNumber;
+
+    // c доплатой за CMS (без отображения)
+    this.servicePriceCMS = Math.round(this.fullPrice * this.percentCMS / 100);
+    this.fullPrice += this.servicePriceCMS;
 
     // расчет итоговой стоимости за вычетом отката
     // (итоговая стоимость уменьшенная на сумму отката посреднику, округленная в большую сторону )
-    appData.servicePercentPrice = Math.ceil(appData.fullPrice * (100 - appData.rollback) / 100);
+    this.servicePercentPrice = Math.ceil(this.fullPrice * (100 - this.rollback) / 100);
   },
 
-  // отмена расчета
-  stop: () => {
-    appData.clear();
-    appData.showResult();
-  },
-
-  // очистка расчета
-  clear: () => {
-    appData.screens.length = 0;
-    appData.servicesPercent.length = 0;
-    appData.servicesNumber.length = 0;
-    appData.screenPrice = 0;
-    appData.screenCount = 0;
-    appData.servicePricesPercent = 0;
-    appData.servicePricesNumber = 0;
-    appData.fullPrice = 0;
-    appData.servicePercentPrice = 0;
+  // очистка итоговых стоимостей
+  delPrices() {
+    this.screenPrice = 0;
+    this.screenCount = 0;
+    this.servicePricesPercent = 0;
+    this.servicePricesNumber = 0;
+    this.servicePriceCMS = 0;
+    this.fullPrice = 0;
+    this.servicePercentPrice = 0;
   },
 
   // вывод результатов расчетов на экран
-  showResult: () => {
+  showResult() {
     // - елементы отображения итогов
-    total.value = appData.screenPrice;
-    totalCount.value = appData.screenCount;
-    totalCountOther.value = appData.servicePricesPercent + appData.servicePricesNumber;
-    fullTotalCount.value = appData.fullPrice;
-    totalCountRollback.value = appData.servicePercentPrice;
+    total.value = this.screenPrice;
+    totalCount.value = this.screenCount;
+    totalCountOther.value = this.servicePricesPercent + this.servicePricesNumber;
+    fullTotalCount.value = this.fullPrice;
+    totalCountRollback.value = this.servicePercentPrice;
   }
 
 };
